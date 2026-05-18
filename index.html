@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>格力WMS系统 - 设计稿地址管理</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", "PingFang SC", "SimSun", sans-serif; }
+    body { background: #f5f7fa; font-size: 14px; color: #333; }
+    .header { background: linear-gradient(90deg, #43989c 0%, #3a888c 100%); height: 60px; line-height: 60px; padding: 0 24px; color: #fff; display: flex; align-items: center; }
+    .logo { font-size: 18px; font-weight: 600; }
+    .content { padding: 24px; max-width: 1920px; margin: 0 auto; }
+    .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .search-area { display: flex; gap: 10px; align-items: center; }
+    .search-input { width: 220px; padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+    .search-btn { background: #43989c; color: #fff; border: none; padding: 6px 16px; border-radius: 4px; cursor: pointer; }
+    .addBtn { background: #43989c; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; margin-left: 10px; }
+    .table-container { background: #fff; border-radius: 8px; border: 1px solid #e8e8e8; overflow-x: auto; }
+    .data-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+    .data-table th, .data-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+    .data-table th { background: #f8f9fa; font-weight: 600; }
+    .link-btn { color: #43989c; text-decoration: none; }
+    .link-btn:hover { text-decoration: underline; }
+    input, select { width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; }
+    .btn { padding: 4px 10px; border-radius: 3px; border: none; cursor: pointer; margin: 0 3px; }
+    .btn-save { background: #43989c; color: #fff; }
+    .btn-cancel { background: #999; color: #fff; }
+    .btn-del { background: #f56c6c; color: #fff; }
+  </style>
+</head>
+<body>
+<div class="header"><div class="logo">格力WMS系统 - 设计稿地址管理</div></div>
+<div class="content">
+  <div class="content-header">
+    <div class="content-title">wms范会产品设计稿访问地址对照表</div>
+    <div class="search-area">
+      <input type="text" id="searchKeyword" class="search-input" placeholder="按设计稿名称模糊搜索">
+      <button id="searchBtn" class="search-btn">🔍 搜索</button>
+      <button class="addBtn" onclick="addOneRow()">➕ 新增一行</button>
+    </div>
+  </div>
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr><th>设计稿名称</th><th>版本号</th><th>终端类型</th><th>访问链接</th><th>备注</th><th>操作</th>
+      </thead>
+      <tbody id="tableBody">
+        <!-- 动态加载数据 -->
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+  // 当前搜索关键词（用于刷新时保留）
+  let currentKeyword = '';
+
+  // 防XSS辅助函数
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+
+  // 从后端加载数据（支持关键词模糊搜索）
+  async function loadDesigns(keyword = '') {
+    let url = '/api/designs';
+    if (keyword && keyword.trim() !== '') {
+      url += `?keyword=${encodeURIComponent(keyword.trim())}`;
+    }
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error('加载失败', response.status);
+      return;
+    }
+    const designs = await response.json();
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+    designs.forEach(d => {
+      const tr = document.createElement('tr');
+      tr.dataset.id = d.id;
+      tr.innerHTML = `
+        <td>${escapeHtml(d.name)}</td>
+        <td>${escapeHtml(d.version)}</td>
+        <td>${escapeHtml(d.type)}</td>
+        <td><a href="${escapeHtml(d.url)}" target="_blank" class="link-btn">打开</a></td>
+        <td>${escapeHtml(d.remark)}</td>
+        <td><button class="btn btn-del" onclick="delRow(this)">删除</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // 刷新列表（使用当前关键词）
+  function refreshList() {
+    loadDesigns(currentKeyword);
+  }
+
+  // 新增一行（显示临时输入行）
+  function addOneRow() {
+    const tbody = document.getElementById("tableBody");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input id="new_name" placeholder="设计稿名称"></td>
+      <td><input id="new_version" value="V1.0"></td>
+      <td><select id="new_type"><option>PC</option><option>PDA</option></select></td>
+      <td><input id="new_url" placeholder="链接"></td>
+      <td><input id="new_remark" placeholder="备注"></td>
+      <td><button class="btn btn-save" onclick="saveNewRow(this)">保存</button><button class="btn btn-cancel" onclick="cancelRow(this)">取消</button></td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // 保存新增（调用后端API）
+  async function saveNewRow(btn) {
+    const tr = btn.parentElement.parentElement;
+    const name = tr.querySelector("#new_name").value.trim();
+    const version = tr.querySelector("#new_version").value.trim();
+    const type = tr.querySelector("#new_type").value;
+    const url = tr.querySelector("#new_url").value.trim();
+    const remark = tr.querySelector("#new_remark").value.trim();
+
+    if (!name || !version || !type || !url) {
+      alert("请填写完整（名称、版本、类型、链接）");
+      return;
+    }
+
+    const response = await fetch('/api/designs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, version, type, url, remark })
+    });
+
+    if (response.ok) {
+      refreshList();   // 保存成功后刷新列表（保持当前搜索关键词）
+    } else {
+      const err = await response.json();
+      alert("保存失败: " + (err.error || "未知错误"));
+    }
+  }
+
+  function cancelRow(btn) {
+    btn.parentElement.parentElement.remove();
+  }
+
+  // 删除行
+  async function delRow(btn) {
+    if (!confirm("确定删除？")) return;
+    const tr = btn.parentElement.parentElement;
+    const id = tr.dataset.id;
+    if (!id) {
+      // 如果删除的是未保存的新行，直接移除
+      tr.remove();
+      return;
+    }
+    const response = await fetch(`/api/designs/${id}`, { method: 'DELETE' });
+    if (response.ok) {
+      refreshList();
+    } else {
+      alert("删除失败");
+    }
+  }
+
+  // 搜索按钮点击事件
+  document.getElementById('searchBtn').addEventListener('click', () => {
+    currentKeyword = document.getElementById('searchKeyword').value;
+    refreshList();
+  });
+
+  // 按回车键也能搜索
+  document.getElementById('searchKeyword').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      currentKeyword = document.getElementById('searchKeyword').value;
+      refreshList();
+    }
+  });
+
+  // 页面加载时获取全部数据
+  refreshList();
+</script>
+</body>
+</html>
