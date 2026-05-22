@@ -5,7 +5,9 @@ const db = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN
 });
 
+// 初始化表 + 初始化数据（只执行一次）
 async function initTable() {
+  // 1. 创建表
   await db.execute(`
     CREATE TABLE IF NOT EXISTS designs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -16,6 +18,65 @@ async function initTable() {
       remark TEXT
     )
   `);
+
+  // 2. 检查是否已有数据
+  const check = await db.execute("SELECT COUNT(*) as count FROM designs");
+  const count = check.rows[0].count;
+
+  // 3. 如果是空表，自动插入你给的 5 条初始数据
+  if (count == 0) {
+    const initData = [
+      {
+        "id": 1,
+        "name": "盘点分析pc看板",
+        "version": "V1.0",
+        "type": "PC",
+        "url": "https://huilog.qzz.io/wmspc03",
+        "remark": "禅道63744"
+      },
+      {
+        "id": 2,
+        "name": "库存看板",
+        "version": "V1.0",
+        "type": "PC",
+        "url": "https://huilog.qzz.io/WMS1",
+        "remark": "无"
+      },
+      {
+        "id": 3,
+        "name": "装卸工时确认pda",
+        "version": "V1.0",
+        "type": "PDA",
+        "url": "https://huilog.qzz.io/wmspda3",
+        "remark": "禅道63740"
+      },
+      {
+        "id": 4,
+        "name": "PDA运单绑定",
+        "version": "V1.0",
+        "type": "PDA",
+        "url": "https://huilog.qzz.io/my-warehousehtml-page/PDAyundanbangdi.html",
+        "remark": "禅道62810"
+      },
+      {
+        "id": 5,
+        "name": "运营参数配置日志",
+        "version": "V1.0",
+        "type": "PC",
+        "url": "https://huilog.qzz.io/wmslog",
+        "remark": "禅道63926"
+      }
+    ];
+
+    for (let item of initData) {
+      await db.execute({
+        sql: `INSERT INTO designs (id, name, version, type, url, remark)
+              VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [item.id, item.name, item.version, item.type, item.url, item.remark]
+      });
+    }
+    console.log("✅ 初始数据已自动插入 Turso 数据库");
+  }
 }
 
 export default async function handler(req, res) {
