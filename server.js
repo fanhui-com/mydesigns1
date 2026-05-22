@@ -1,12 +1,10 @@
 import { createClient } from '@libsql/client';
 
-// 连接 Turso 数据库
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN,
+  authToken: process.env.TURSO_AUTH_TOKEN
 });
 
-// 初始化表（自动创建）
 async function initTable() {
   await db.execute(`
     CREATE TABLE IF NOT EXISTS designs (
@@ -20,44 +18,38 @@ async function initTable() {
   `);
 }
 
-// Vercel 入口
 export default async function handler(req, res) {
   await initTable();
+  const { method, query, body } = req;
 
-  // 查询列表
-  if (req.method === 'GET') {
-    const keyword = req.query.keyword || '';
-    let sql = 'SELECT * FROM designs ORDER BY id DESC';
-    let params = [];
-
-    if (keyword) {
-      sql += ' WHERE name LIKE ?';
-      params.push(`%${keyword}%`);
+  if (method === 'GET') {
+    let sql = "SELECT * FROM designs ORDER BY id DESC";
+    let args = [];
+    if (query.keyword) {
+      sql += " WHERE name LIKE ?";
+      args.push(`%${query.keyword}%`);
     }
-
-    const result = await db.execute({ sql, args: params });
-    return res.status(200).json(result.rows);
+    const result = await db.execute({ sql, args });
+    return res.json(result.rows);
   }
 
-  // 新增
-  if (req.method === 'POST') {
-    const { name, version, type, url, remark } = req.body;
+  if (method === 'POST') {
+    const { name, version, type, url, remark } = body;
     await db.execute({
-      sql: 'INSERT INTO designs (name, version, type, url, remark) VALUES (?,?,?,?,?)',
-      args: [name, version, type || 'PC', url, remark || '']
+      sql: "INSERT INTO designs(name,version,type,url,remark) VALUES(?,?,?,?,?)",
+      args: [name, version, type||"PC", url, remark||""]
     });
-    return res.status(200).json({ ok: true });
+    return res.json({ success: true });
   }
 
-  // 删除
-  if (req.method === 'DELETE') {
-    const id = req.url.split('/').pop();
+  if (method === 'DELETE') {
+    const id = req.url.split("/").pop();
     await db.execute({
-      sql: 'DELETE FROM designs WHERE id = ?',
+      sql: "DELETE FROM designs WHERE id=?",
       args: [id]
     });
-    return res.status(200).json({ ok: true });
+    return res.json({ success: true });
   }
 
-  return res.status(405).end('Method Not Allowed');
+  res.status(405).json({ error: "请求方式非法" });
 }
