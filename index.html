@@ -5,21 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>格力WMS系统 - 设计稿地址管理</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", sans-serif; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", "PingFang SC", "SimSun", sans-serif; }
     body { background: #f5f7fa; font-size: 14px; color: #333; }
-    .header { background: linear-gradient(90deg, #43989c 0%, #3a888c 100%); height: 60px; line-height: 60px; padding: 0 24px; color: #fff; }
+    .header { background: linear-gradient(90deg, #43989c 0%, #3a888c 100%); height: 60px; line-height: 60px; padding: 0 24px; color: #fff; display: flex; align-items: center; }
     .logo { font-size: 18px; font-weight: 600; }
     .content { padding: 24px; max-width: 1920px; margin: 0 auto; }
     .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .search-area { display: flex; gap: 10px; align-items: center; }
-    .search-input { width: 220px; padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px; }
+    .search-input { width: 220px; padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
     .search-btn { background: #43989c; color: #fff; border: none; padding: 6px 16px; border-radius: 4px; cursor: pointer; }
     .addBtn { background: #43989c; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; margin-left: 10px; }
     .table-container { background: #fff; border-radius: 8px; border: 1px solid #e8e8e8; overflow-x: auto; }
     .data-table { width: 100%; border-collapse: collapse; min-width: 800px; }
     .data-table th, .data-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #f0f0f0; }
     .data-table th { background: #f8f9fa; font-weight: 600; }
-    .link-btn { color: #43989c; }
+    .link-btn { color: #43989c; text-decoration: none; }
+    .link-btn:hover { text-decoration: underline; }
     input, select { width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; }
     .btn { padding: 4px 10px; border-radius: 3px; border: none; cursor: pointer; margin: 0 3px; }
     .btn-save { background: #43989c; color: #fff; }
@@ -31,11 +32,11 @@
 <div class="header"><div class="logo">格力WMS系统 - 设计稿地址管理</div></div>
 <div class="content">
   <div class="content-header">
-    <div>wms范会产品设计稿访问地址对照表</div>
+    <div class="content-title">wms范会产品设计稿访问地址对照表</div>
     <div class="search-area">
-      <input type="text" id="searchKeyword" placeholder="按名称搜索">
-      <button id="searchBtn" class="search-btn">搜索</button>
-      <button class="addBtn" onclick="addOneRow()">新增一行</button>
+      <input type="text" id="searchKeyword" class="search-input" placeholder="按设计稿名称模糊搜索">
+      <button id="searchBtn" class="search-btn">🔍 搜索</button>
+      <button class="addBtn" onclick="addOneRow()">➕ 新增一行</button>
     </div>
   </div>
   <div class="table-container">
@@ -43,10 +44,11 @@
       <thead>
         <tr><th>设计稿名称</th><th>版本号</th><th>终端类型</th><th>访问链接</th><th>备注</th><th>操作</th>
       </thead>
-      <tbody id="tableBody"></tbody>
+      <tbody id="tableBody">
+      </tbody>
     </table>
   </div>
 </div>
-<script src="../app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
