@@ -44,11 +44,111 @@
       <thead>
         <tr><th>设计稿名称</th><th>版本号</th><th>终端类型</th><th>访问链接</th><th>备注</th><th>操作</th>
       </thead>
-      <tbody id="tableBody">
-      </tbody>
+      <tbody id="tableBody"></tbody>
     </table>
   </div>
 </div>
-<script src="app.js"></script>
+
+<!-- 所有 JS 直接写在这里，不需要外部 app.js -->
+<script>
+let currentKeyword = '';
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function loadDesigns(keyword = '') {
+  try {
+    let apiUrl = '/api/designs';
+    if (keyword.trim()) {
+      apiUrl += `?keyword=${encodeURIComponent(keyword)}`;
+    }
+    const res = await fetch(apiUrl);
+    const list = await res.json();
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+    list.forEach(item => {
+      const tr = document.createElement('tr');
+      tr.dataset.id = item.id;
+      tr.innerHTML = `
+        <td>${escapeHtml(item.name)}</td>
+        <td>${escapeHtml(item.version)}</td>
+        <td>${escapeHtml(item.type)}</td>
+        <td><a href="${escapeHtml(item.url)}" target="_blank" class="link-btn">打开</a></td>
+        <td>${escapeHtml(item.remark)}</td>
+        <td><button class="btn btn-del" onclick="delRow(this)">删除</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (e) {
+    alert('数据加载失败');
+  }
+}
+
+function refreshList() {
+  loadDesigns(currentKeyword);
+}
+
+function addOneRow() {
+  const tbody = document.getElementById('tableBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input placeholder="设计稿名称"></td>
+    <td><input value="V1.0"></td>
+    <td><select><option>PC</option><option>PDA</option></select></td>
+    <td><input placeholder="访问链接"></td>
+    <td><input placeholder="备注"></td>
+    <td>
+      <button class="btn btn-save" onclick="saveNewRow(this)">保存</button>
+      <button class="btn btn-cancel" onclick="cancelRow(this)">取消</button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+}
+
+async function saveNewRow(btn) {
+  const tr = btn.closest('tr');
+  const inputs = tr.querySelectorAll('input,select');
+  const [name,version,type,url,remark] = [...inputs].map(el=>el.value.trim());
+  if(!name||!version||!url){
+    alert('名称、版本、链接为必填项');
+    return;
+  }
+  const res = await fetch('/api/designs',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name,version,type,url,remark})
+  });
+  if(res.ok) refreshList();
+  else alert('保存失败');
+}
+
+function cancelRow(btn) {
+  btn.closest('tr').remove();
+}
+
+async function delRow(btn) {
+  if(!confirm('确定删除该条数据？')) return;
+  const tr = btn.closest('tr');
+  const id = tr.dataset.id;
+  const res = await fetch(`/api/designs/${id}`,{method:'DELETE'});
+  if(res.ok) refreshList();
+  else alert('删除失败');
+}
+
+window.onload = ()=>{
+  const searchBtn = document.getElementById('searchBtn');
+  const searchInput = document.getElementById('searchKeyword');
+  searchBtn.addEventListener('click',()=>{
+    currentKeyword = searchInput.value;
+    refreshList();
+  });
+  searchInput.addEventListener('keypress',e=>{
+    if(e.key === 'Enter') searchBtn.click();
+  });
+  refreshList();
+};
+</script>
 </body>
 </html>
