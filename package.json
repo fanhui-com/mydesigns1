@@ -1,14 +1,7 @@
 {
-  "name": "wms-designs",
+  "name": "wms-design-url",
   "version": "1.0.0",
-  "description": "设计稿地址管理工具",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
   "dependencies": {
-    "express": "^4.18.2",
-    "sqlite3": "^5.1.6",
-    "@tursodatabase/serverless": "^0.1.0"
+    "@libsql/client": "^0.6.0"
   }
 }
