@@ -1,6 +1,7 @@
 {
   "name": "wms-design-url",
   "version": "1.0.0",
+  "type": "module",
   "dependencies": {
     "@libsql/client": "^0.6.0"
   }
